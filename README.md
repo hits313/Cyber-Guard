@@ -121,25 +121,23 @@ streamlit run app.py
 | 🔒 Blue Teamers        | IOC mapping, SIEM rule testing, threat modeling |
 | ⚙️ DevSecOps Engineers  | Pipeline audits, hardening guidance, SCA checks |
 | 🧑‍🎓 Cybersecurity Learners | Learn via contextual examples, threat maps, compliance alignment |
-
----
+---=-------------------------------------------------------------------------------------------
 
 ## 🛡️ Key Capabilities Matrix
-
-| Capability                 | Status       |
-|---------------------------|--------------|
+----------------------------------------------
+| Capability                 | Status         |
+|---------------------------|-----------------|
 | Deep Research Mode        | ✅ Implemented |
 | CVE/CWE Analyzer          | ✅ Implemented |
 | Streamlit Frontend        | ✅ Implemented |
-| Ollama Model Integration  | ✅ Integrated |
-| DevSecOps Prompting       | ✅ Live       |
-| Threat Modeling           | ✅ Basic      |
+| Ollama Model Integration  | ✅ Integrated  |
+| DevSecOps Prompting       | ✅ Live        |
+| Threat Modeling           | ✅ Basic       |
 | Voice Input/Output        | 🔄 In Progress |
 | Wazuh/SIEM Plugin Support | 🔜 Planned     |
 | CLI-only mode             | 🔜 Planned     |
 | PDF Report Generator      | 🔜 Planned     |
-
----
+----------------------------------------------
 
 ## 🔐 Security Domains Covered
 
@@ -162,20 +160,19 @@ streamlit run app.py
 ---
 
 ## 🧑‍🤝‍🧑 Contributors
-
+------------------------------------------------------
 | Name           | Role                             |
 |----------------|----------------------------------|
 | Hitarth Shah   | Lead Developer, Deep Research Creator |
 | Maharishi      | DevSecOps Integration, Testing Lead |
 | Dhaarakh       | UI/UX Designer, Backend Contributor |
-
----
+--------------------------------------------------------
 
 ## 📢 Contact Us
 
-- 📧 Email: `hitarthshahx@gmail.com`
-- 🔗 LinkedIn: [Hitarth Shah](https://linkedin.com/in/hitarthshahx)
-- 🐦 Twitter: [@hits_hub](https://twitter.com/hits_hub)
+- 📧 Email: `hitarthshahx`
+- 🔗 LinkedIn: [Hitarth Shah]
+- 🐦 Twitter: [@hits]
 
 ---
 
@@ -191,15 +188,3 @@ Feel free to fork, contribute, or build on top of this project with credit.
 > *Built by hackers, for defenders. Cyber-Guard is not just a chatbot—it’s your AI analyst, researcher, and security companion.*
 
 **🔐 Hack Smarter. Defend Stronger.**
-```
-
----
-
-Let me know if you want this turned into an actual GitHub repository template, or if you want additional files like:
-
-- `CONTRIBUTING.md`
-- `LICENSE`
-- `SECURITY.md`
-- `CODE_OF_CONDUCT.md`
-
-I can also help you auto-generate badges (like stars, forks, license, etc.) and setup GitHub Actions for model building or testing.
