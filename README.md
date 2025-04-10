@@ -12,8 +12,8 @@ Here’s your full **detailed `README.md`** in proper markdown syntax for the **
 **Cyber-Guard** is an AI-driven assistant crafted specifically for the modern cybersecurity landscape. Tailored for **DevSecOps**, **bug bounty hunters**, and **infosec researchers**, it offers advanced contextual understanding and deep analytical capabilities. This project was created as a **Final Year Capstone Project** by:
 
 - **Hitarth Shah** – Core developer, bug bounty researcher, and creator of Deep Research feature  
-- **Maharishi** – DevSecOps integration and testing lead  
-- **Dhaarakh** – UI/UX, architecture design, and backend logic  
+- **Maharshi** – DevSecOps integration and testing lead  
+- **Dhaarak** – UI/UX, architecture design, and backend logic  
 
 Cyber-Guard leverages a custom-trained **Ollama 3B-7 model with 10 million parameters**, fine-tuned using proprietary data from real-world bug bounty reports, red team exercises, and regulatory compliance frameworks.
 
