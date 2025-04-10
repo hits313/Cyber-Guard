@@ -10,6 +10,8 @@ import html
 import json
 import os
 import uuid
+import textwrap
+from bs4 import BeautifulSoup
 
 # Page configuration
 st.set_page_config(
@@ -21,14 +23,14 @@ st.set_page_config(
 
 # Larger, better ASCII Art Logo
 ASCII_LOGO = """
- ██████╗██╗   ██╗██████╗ ███████╗██████╗  ██████╗ ██╗   ██╗ █████╗ ██████╗ ██████╗ 
+██████╗██╗   ██╗██████╗ ███████╗██████╗  ██████╗ ██╗   ██╗ █████╗ ██████╗ ██████╗ 
 ██╔════╝╚██╗ ██╔╝██╔══██╗██╔════╝██╔══██╗██╔════╝ ██║   ██║██╔══██╗██╔══██╗██╔══██╗
 ██║      ╚████╔╝ ██████╔╝█████╗  ██████╔╝██║  ███╗██║   ██║███████║██████╔╝██║  ██║
 ██║       ╚██╔╝  ██╔══██╗██╔══╝  ██╔══██╗██║   ██║██║   ██║██╔══██║██╔══██╗██║  ██║
 ╚██████╗   ██║   ██████╔╝███████╗██║  ██║╚██████╔╝╚██████╔╝██║  ██║██║  ██║██████╔╝
- ╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ██╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ 
-                                                                                    
-                    🛡️ ADVANCED DEVSECOPS & CYBERSECURITY AI 🛡️
+╚═════╝   ╚═╝   ╚═════╝ ╚══════╝╚═╝  ╚═╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═════╝ 
+                                                                                   
+                   🛡️ ADVANCED DEVSECOPS & CYBERSECURITY AI 🛡️
 """
 
 # Theme options
@@ -151,6 +153,12 @@ if "chat_titles" not in st.session_state:
 if "show_welcome_prompts" not in st.session_state:
     st.session_state.show_welcome_prompts = True
 
+if "summarize_mode" not in st.session_state:
+    st.session_state.summarize_mode = False
+
+if "auto_analyze" not in st.session_state:
+    st.session_state.auto_analyze = False
+
 # Directory for saving chat history
 HISTORY_DIR = "chat_history"
 os.makedirs(HISTORY_DIR, exist_ok=True)
@@ -178,10 +186,10 @@ WELCOME_PROMPTS = [
 # Get current theme
 current_theme = THEMES[st.session_state.theme]
 
-# Custom CSS for a modern AI bot UI inspired by ChatGPT
+# Custom CSS for a modern AI bot UI inspired by ChatGPT and Claude
 st.markdown(f"""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
     
     :root {{
         --primary-color: {current_theme["primary_color"]};
@@ -225,6 +233,7 @@ st.markdown(f"""
     section[data-testid="stSidebar"] {{
         background-color: var(--sidebar-bg);
         border-right: 1px solid var(--border-color);
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
     }}
     
     section[data-testid="stSidebar"] .block-container {{
@@ -265,6 +274,7 @@ st.markdown(f"""
         animation: pulse 2s infinite ease-in-out;
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
     }}
     
     @keyframes pulse {{
@@ -281,6 +291,7 @@ st.markdown(f"""
         background-clip: text;
         color: transparent;
         margin-bottom: 0.5rem;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }}
     
     .welcome-subtitle {{
@@ -321,12 +332,13 @@ st.markdown(f"""
         border-radius: 12px;
         border: 1px solid var(--border-color);
         padding: 1.25rem;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         height: 100%;
         display: flex;
         flex-direction: column;
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }}
     
     .dashboard-card:hover {{
@@ -352,6 +364,7 @@ st.markdown(f"""
         margin-right: 1rem;
         font-size: 1.25rem;
         color: white;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     }}
     
     .dashboard-card-title {{
@@ -372,6 +385,8 @@ st.markdown(f"""
         display: flex;
         align-items: center;
         justify-content: space-between;
+        padding-top: 0.75rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
     }}
     
     .dashboard-card-stat {{
@@ -386,10 +401,12 @@ st.markdown(f"""
         display: flex;
         align-items: center;
         cursor: pointer;
+        transition: all 0.2s ease;
     }}
     
     .dashboard-card-action:hover {{
         color: var(--secondary-color);
+        transform: translateX(3px);
     }}
     
     /* Chat container */
@@ -405,6 +422,9 @@ st.markdown(f"""
         scrollbar-color: var(--primary-light) var(--card-bg);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        display: flex;
+        flex-direction: column-reverse; /* Reverse to show newest messages at the bottom */
     }}
     
     .chat-container::-webkit-scrollbar {{
@@ -413,6 +433,7 @@ st.markdown(f"""
     
     .chat-container::-webkit-scrollbar-track {{
         background: var(--card-bg);
+        border-radius: 3px;
     }}
     
     .chat-container::-webkit-scrollbar-thumb {{
@@ -435,8 +456,9 @@ st.markdown(f"""
     .message-content {{
         padding: 1rem;
         border-radius: 16px;
-        max-width: 80%;
+        max-width: 85%;
         line-height: 1.5;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     }}
     
     .user-message {{
@@ -464,6 +486,7 @@ st.markdown(f"""
         font-size: 1rem;
         margin: 0 0.75rem;
         flex-shrink: 0;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     }}
     
     .user-avatar {{
@@ -476,18 +499,20 @@ st.markdown(f"""
         color: white;
     }}
     
-    /* Input area */
+    /* Input area - Improved to look like modern chatbots */
     .input-container {{
         background-color: var(--card-bg);
         border: 1px solid var(--border-color);
         border-radius: 16px;
-        padding: 0.5rem;
+        padding: 0.75rem;
         display: flex;
-        align-items: center;
+        align-items: flex-end;
         margin-top: 1rem;
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         position: relative;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        transition: all 0.3s ease;
     }}
     
     .input-container:focus-within {{
@@ -495,29 +520,83 @@ st.markdown(f"""
         box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
     }}
     
+    /* Improved text input styling */
     .stTextInput > div > div {{
-        background-color: transparent;
-        color: var(--text-color);
+        background-color: transparent !important;
+        color: var(--text-color) !important;
+        border: none !important;
+        padding: 0 !important;
+        font-family: 'Inter', sans-serif !important;
     }}
     
     .stTextInput > div > div > input {{
-        color: var(--text-color);
+        color: var(--text-color) !important;
+        font-size: 1rem !important;
+        padding: 0.5rem 0 !important;
+        height: auto !important;
+        min-height: 40px !important;
+        border-radius: 0 !important;
+        border: none !important;
+        background: transparent !important;
+        box-shadow: none !important;
     }}
     
-    /* Buttons */
+    .stTextInput > div > div > input:focus {{
+        box-shadow: none !important;
+        border: none !important;
+    }}
+    
+    /* Placeholder styling */
+    .stTextInput > div > div > input::placeholder {{
+        color: var(--text-muted) !important;
+        opacity: 0.7 !important;
+    }}
+    
+    /* Buttons - Improved styling */
     .stButton > button {{
-        background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 0.5rem 1.5rem;
-        font-weight: 500;
-        transition: all 0.2s ease;
+        background: linear-gradient(90deg, var(--primary-color), var(--primary-light)) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 1.5rem !important;
+        font-weight: 500 !important;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
+        font-family: 'Inter', sans-serif !important;
+        text-transform: none !important;
+        letter-spacing: normal !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        height: 40px !important;
     }}
     
     .stButton > button:hover {{
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3) !important;
+        filter: brightness(110%) !important;
+    }}
+    
+    .stButton > button:active {{
+        transform: translateY(0) !important;
+        box-shadow: 0 2px 5px rgba(124, 58, 237, 0.2) !important;
+    }}
+    
+    /* Send button specific styling */
+    .send-button button {{
+        border-radius: 50% !important;
+        width: 40px !important;
+        height: 40px !important;
+        padding: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
+    }}
+    
+    .send-button button:hover {{
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3) !important;
     }}
     
     /* Status indicators */
@@ -546,6 +625,11 @@ st.markdown(f"""
         border-radius: 8px;
         color: var(--text-color);
         font-weight: 500;
+        transition: all 0.2s ease;
+    }}
+    
+    .streamlit-expanderHeader:hover {{
+        background-color: var(--hover-color);
     }}
     
     .streamlit-expanderContent {{
@@ -557,13 +641,15 @@ st.markdown(f"""
         padding: 1rem;
     }}
     
-    /* Enhanced Markdown styling */
+    /* Enhanced Markdown styling - Improved for better readability */
     .enhanced-markdown h1 {{
         font-size: 1.8rem;
         margin-top: 1.5rem;
         margin-bottom: 1rem;
         padding-bottom: 0.3rem;
         border-bottom: 1px solid var(--border-color);
+        color: var(--text-color);
+        font-weight: 700;
     }}
     
     .enhanced-markdown h2 {{
@@ -571,6 +657,7 @@ st.markdown(f"""
         margin-top: 1.2rem;
         margin-bottom: 0.8rem;
         color: var(--text-color);
+        font-weight: 600;
     }}
     
     .enhanced-markdown h3 {{
@@ -578,20 +665,24 @@ st.markdown(f"""
         margin-top: 1rem;
         margin-bottom: 0.6rem;
         color: var(--text-color);
+        font-weight: 600;
     }}
     
     .enhanced-markdown p {{
         margin-bottom: 1rem;
         line-height: 1.6;
+        color: var(--text-color);
     }}
     
     .enhanced-markdown ul, .enhanced-markdown ol {{
         margin-bottom: 1rem;
         margin-left: 1.5rem;
+        padding-left: 0.5rem;
     }}
     
     .enhanced-markdown li {{
         margin-bottom: 0.5rem;
+        line-height: 1.5;
     }}
     
     .enhanced-markdown a {{
@@ -608,9 +699,10 @@ st.markdown(f"""
     
     .enhanced-markdown blockquote {{
         border-left: 4px solid var(--primary-light);
-        padding-left: 1rem;
-        margin-left: 0;
-        margin-right: 0;
+        padding: 0.5rem 0 0.5rem 1rem;
+        margin: 1rem 0;
+        background-color: rgba(124, 58, 237, 0.05);
+        border-radius: 0 8px 8px 0;
         font-style: italic;
         color: var(--text-muted);
     }}
@@ -618,23 +710,28 @@ st.markdown(f"""
     .enhanced-markdown table {{
         width: 100%;
         border-collapse: collapse;
-        margin-bottom: 1rem;
+        margin: 1.5rem 0;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }}
     
     .enhanced-markdown th, .enhanced-markdown td {{
-        padding: 0.5rem;
+        padding: 0.75rem 1rem;
         border: 1px solid var(--border-color);
     }}
     
     .enhanced-markdown th {{
         background-color: rgba(124, 58, 237, 0.1);
+        font-weight: 600;
+        text-align: left;
     }}
     
     .enhanced-markdown tr:nth-child(even) {{
         background-color: rgba(255, 255, 255, 0.05);
     }}
     
-    /* Code blocks */
+    /* Code blocks - Improved styling */
     .enhanced-markdown code {{
         font-family: 'JetBrains Mono', monospace;
         background-color: var(--code-bg);
@@ -642,6 +739,8 @@ st.markdown(f"""
         padding: 0.2rem 0.4rem;
         border-radius: 4px;
         font-size: 0.9rem;
+        font-weight: 500;
+        letter-spacing: -0.025em;
     }}
     
     .enhanced-markdown pre {{
@@ -650,7 +749,8 @@ st.markdown(f"""
         border-radius: 8px;
         padding: 1rem;
         overflow-x: auto;
-        margin-bottom: 1rem;
+        margin: 1.5rem 0;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
     }}
     
     .enhanced-markdown pre code {{
@@ -660,16 +760,17 @@ st.markdown(f"""
         color: var(--text-color);
         display: block;
         line-height: 1.6;
+        font-weight: 400;
     }}
     
-    /* Syntax highlighting */
+    /* Syntax highlighting - Improved colors */
     .enhanced-markdown .keyword {{ color: #FF79C6; }}
     .enhanced-markdown .function {{ color: #50FA7B; }}
     .enhanced-markdown .string {{ color: #F1FA8C; }}
     .enhanced-markdown .number {{ color: #BD93F9; }}
     .enhanced-markdown .comment {{ color: #6272A4; }}
     
-    /* Typing indicator */
+    /* Typing indicator - More subtle animation */
     .typing-indicator {{
         display: flex;
         align-items: center;
@@ -690,16 +791,21 @@ st.markdown(f"""
     .typing-dot:nth-child(3) {{ animation-delay: 0.4s; }}
     
     @keyframes typingAnimation {{
-        0%, 60%, 100% {{ transform: translateY(0); }}
-        30% {{ transform: translateY(-5px); }}
+        0%, 60%, 100% {{ transform: translateY(0); opacity: 0.6; }}
+        30% {{ transform: translateY(-5px); opacity: 1; }}
     }}
     
-    /* Selectbox */
+    /* Selectbox - Improved styling */
     .stSelectbox > div > div {{
-        background-color: var(--card-bg);
-        color: var(--text-color);
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
+        background-color: var(--card-bg) !important;
+        color: var(--text-color) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 8px !important;
+        transition: all 0.2s ease !important;
+    }}
+    
+    .stSelectbox > div > div:hover {{
+        border-color: var(--primary-light) !important;
     }}
     
     /* Checkbox */
@@ -726,12 +832,14 @@ st.markdown(f"""
         border-radius: 12px;
         padding: 1rem;
         margin-bottom: 1rem;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }}
     
     .feature-card:hover {{
         transform: translateY(-5px);
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        border-color: var(--primary-light);
     }}
     
     .feature-icon {{
@@ -756,15 +864,18 @@ st.markdown(f"""
         text-align: center;
         cursor: pointer;
         transition: all 0.2s ease;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }}
     
     .mode-option:hover {{
         border-color: var(--primary-light);
+        transform: translateY(-2px);
     }}
     
     .mode-option.active {{
         background-color: rgba(124, 58, 237, 0.2);
         border-color: var(--primary-color);
+        box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
     }}
     
     .mode-icon {{
@@ -786,12 +897,14 @@ st.markdown(f"""
         border-radius: 12px;
         padding: 1rem;
         margin-bottom: 1rem;
-        transition: transform 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }}
     
     .stats-card:hover {{
         transform: translateY(-3px);
         border-color: var(--primary-light);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
     }}
     
     .stats-icon {{
@@ -805,6 +918,7 @@ st.markdown(f"""
         font-size: 1.5rem;
         color: white;
         margin-right: 1rem;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     }}
     
     .stats-content {{
@@ -865,6 +979,7 @@ st.markdown(f"""
         transition: opacity 0.3s;
         border: 1px solid var(--border-color);
         font-size: 0.9rem;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
     }}
     
     .tooltip:hover .tooltiptext {{
@@ -877,11 +992,18 @@ st.markdown(f"""
         display: inline-block;
         background-color: rgba(124, 58, 237, 0.2);
         color: var(--primary-light);
-        border-radius: 4px;
+        border-radius: 6px;
         padding: 0.2rem 0.5rem;
         font-size: 0.8rem;
         margin-right: 0.5rem;
         margin-bottom: 0.5rem;
+        transition: all 0.2s ease;
+        font-weight: 500;
+    }}
+    
+    .tag:hover {{
+        background-color: rgba(124, 58, 237, 0.3);
+        transform: translateY(-1px);
     }}
     
     /* Footer */
@@ -905,6 +1027,7 @@ st.markdown(f"""
         font-size: 0.8rem;
         font-weight: 500;
         margin-left: 0.5rem;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }}
     
     .mode-badge-icon {{
@@ -935,7 +1058,7 @@ st.markdown(f"""
         100% {{ opacity: 0.2; }}
     }}
     
-    /* Chat history sidebar */
+    /* Chat history sidebar - Improved styling */
     .chat-history-item {{
         display: flex;
         align-items: center;
@@ -945,16 +1068,19 @@ st.markdown(f"""
         cursor: pointer;
         transition: all 0.2s ease;
         border: 1px solid transparent;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }}
     
     .chat-history-item:hover {{
         background-color: var(--hover-color);
         border-color: var(--border-color);
+        transform: translateX(3px);
     }}
     
     .chat-history-item.active {{
         background-color: rgba(124, 58, 237, 0.2);
         border-color: var(--primary-color);
+        box-shadow: 0 0 0 1px var(--primary-color);
     }}
     
     .chat-history-icon {{
@@ -968,6 +1094,7 @@ st.markdown(f"""
         margin-right: 0.75rem;
         font-size: 1rem;
         color: white;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }}
     
     .chat-history-content {{
@@ -987,9 +1114,10 @@ st.markdown(f"""
     .chat-history-date {{
         font-size: 0.75rem;
         color: var(--text-muted);
+        margin-top: 0.25rem;
     }}
     
-    /* Predefined questions */
+    /* Predefined questions - Improved styling */
     .predefined-questions {{
         display: flex;
         flex-wrap: wrap;
@@ -1004,17 +1132,19 @@ st.markdown(f"""
         padding: 0.5rem 1rem;
         font-size: 0.9rem;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
         max-width: 100%;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }}
     
     .predefined-question:hover {{
         background-color: var(--hover-color);
         border-color: var(--primary-color);
         transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
     }}
     
     /* Cursor animation */
@@ -1033,31 +1163,34 @@ st.markdown(f"""
         50%, 100% {{ opacity: 0; }}
     }}
     
-    /* Theme selector */
+    /* Theme selector - Improved styling */
     .theme-selector {{
         display: flex;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
         flex-wrap: wrap;
+        justify-content: center;
     }}
     
     .theme-option {{
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         border: 2px solid var(--border-color);
         position: relative;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     }}
     
     .theme-option:hover {{
-        transform: scale(1.1);
+        transform: scale(1.15);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     }}
     
     .theme-option.active {{
         border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px var(--primary-color);
+        box-shadow: 0 0 0 2px var(--primary-color), 0 5px 15px rgba(0, 0, 0, 0.2);
     }}
     
     .theme-option.active::after {{
@@ -1067,34 +1200,37 @@ st.markdown(f"""
         left: 50%;
         transform: translate(-50%, -50%);
         color: white;
-        font-size: 0.8rem;
+        font-size: 0.9rem;
         font-weight: bold;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
     }}
     
-    /* New chat button */
+    /* New chat button - Improved styling */
     .new-chat-btn {{
         display: flex;
         align-items: center;
         justify-content: center;
         gap: 0.5rem;
-        background-color: var(--primary-color);
+        background: linear-gradient(90deg, var(--primary-color), var(--primary-light));
         color: white;
         border: none;
         border-radius: 8px;
-        padding: 0.5rem 1rem;
+        padding: 0.75rem 1rem;
         font-weight: 500;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         width: 100%;
-        margin-bottom: 1rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     }}
     
     .new-chat-btn:hover {{
-        background-color: var(--primary-dark);
+        background: linear-gradient(90deg, var(--primary-light), var(--primary-color));
         transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
     }}
     
-    /* Welcome prompts */
+    /* Welcome prompts - Improved styling */
     .welcome-prompts-grid {{
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -1114,8 +1250,9 @@ st.markdown(f"""
         border-radius: 12px;
         padding: 1.25rem;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         height: 100%;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }}
     
     .welcome-prompt-card:hover {{
@@ -1134,6 +1271,40 @@ st.markdown(f"""
     .welcome-prompt-text {{
         color: var(--text-muted);
         font-size: 0.9rem;
+        line-height: 1.5;
+    }}
+    
+    /* Send button icon */
+    .send-icon {{
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 24px;
+        height: 24px;
+    }}
+    
+    /* Improved radio buttons for mode selection */
+    .stRadio > div {{
+        background-color: transparent !important;
+    }}
+    
+    .stRadio > div > div > label {{
+        background-color: var(--card-bg) !important;
+        border: 1px solid var(--border-color) !important;
+        border-radius: 8px !important;
+        padding: 0.75rem !important;
+        transition: all 0.2s ease !important;
+        margin-bottom: 0.5rem !important;
+    }}
+    
+    .stRadio > div > div > label:hover {{
+        background-color: var(--hover-color) !important;
+        border-color: var(--primary-light) !important;
+    }}
+    
+    .stRadio > div > div > label[data-baseweb="radio"] input:checked + div {{
+        background-color: var(--primary-color) !important;
+        border-color: var(--primary-light) !important;
     }}
     
     /* Footer */
@@ -1145,13 +1316,75 @@ st.markdown(f"""
         font-size: 0.8rem;
         border-top: 1px solid var(--border-color);
     }}
+
+    /* Message wrapper to fix the order */
+    .messages-wrapper {{
+        display: flex;
+        flex-direction: column;
+    }}
+
+    /* Feature toggle switches */
+    .feature-toggle {{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.5rem;
+        border-radius: 8px;
+        background-color: var(--card-bg);
+        margin-bottom: 0.5rem;
+        border: 1px solid var(--border-color);
+    }}
+
+    .feature-toggle-label {{
+        font-size: 0.9rem;
+        font-weight: 500;
+    }}
+
+    /* Summarize section */
+    .summary-container {{
+        background-color: var(--card-bg);
+        border: 1px solid var(--primary-light);
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }}
+
+    .summary-title {{
+        font-weight: 600;
+        font-size: 1rem;
+        color: var(--primary-light);
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+    }}
+
+    .summary-title svg {{
+        margin-right: 0.5rem;
+    }}
+
+    .summary-content {{
+        font-size: 0.9rem;
+        line-height: 1.5;
+        color: var(--text-color);
+    }}
+
+    /* Fix for code blocks */
+    .enhanced-markdown pre code {{
+        white-space: pre;
+        word-wrap: normal;
+        overflow-x: auto;
+    }}
     </style>
 """, unsafe_allow_html=True)
 
 # Enhanced markdown rendering with better syntax highlighting
 def render_markdown(text):
+    if text is None:
+        return ""
+    
     # Process code blocks with syntax highlighting
-    code_pattern = r'\`\`\`(\w+)?\n(.*?)\n\`\`\`'
+    code_pattern = r'```(\w+)?\s*\n(.*?)\n```'
     
     def code_replace(match):
         lang = match.group(1) or ''
@@ -1180,18 +1413,35 @@ def render_markdown(text):
             code = re.sub(r'(\/\/.*)', r'<span class="comment">\1</span>', code, flags=re.MULTILINE)
             code = re.sub(r'\b([a-zA-Z_][a-zA-Z0-9_]*)\(', r'<span class="function">\1</span>(', code)
         
+        # Escape HTML in code
+        code = html.escape(code)
+        
+        # Apply syntax highlighting classes
+        code = re.sub(r'&lt;span class=&quot;keyword&quot;&gt;(.*?)&lt;/span&gt;', r'<span class="keyword">\1</span>', code)
+        code = re.sub(r'&lt;span class=&quot;string&quot;&gt;(.*?)&lt;/span&gt;', r'<span class="string">\1</span>', code)
+        code = re.sub(r'&lt;span class=&quot;number&quot;&gt;(.*?)&lt;/span&gt;', r'<span class="number">\1</span>', code)
+        code = re.sub(r'&lt;span class=&quot;comment&quot;&gt;(.*?)&lt;/span&gt;', r'<span class="comment">\1</span>', code)
+        code = re.sub(r'&lt;span class=&quot;function&quot;&gt;(.*?)&lt;/span&gt;', r'<span class="function">\1</span>', code)
+        
         return f'<pre><code class="{lang}">{code}</code></pre>'
     
     # Replace code blocks
     text = re.sub(code_pattern, code_replace, text, flags=re.DOTALL)
     
-    # Convert markdown to HTML
+    # Convert markdown to HTML with enhanced features
     html_content = markdown.markdown(
         text,
         extensions=['tables', 'fenced_code', 'codehilite', 'nl2br']
     )
     
-    return f'<div class="enhanced-markdown">{html_content}</div>'
+    # Clean up any remaining [object Object] issues
+    html_content = html_content.replace("[object Object]", "")
+    
+    # Use BeautifulSoup to parse and clean the HTML
+    soup = BeautifulSoup(html_content, 'html.parser')
+    
+    # Return the cleaned HTML
+    return f'<div class="enhanced-markdown">{str(soup)}</div>'
 
 # Animated typing indicator
 def typing_indicator():
@@ -1273,6 +1523,10 @@ def check_ollama_server():
 
 # Display chat messages with enhanced markdown
 def display_messages():
+    # Create a container for all messages
+    st.markdown('<div class="messages-wrapper">', unsafe_allow_html=True)
+    
+    # Display messages in correct order
     for idx, message in enumerate(st.session_state.messages):
         if message["role"] == "user":
             st.markdown(f"""
@@ -1283,6 +1537,8 @@ def display_messages():
             </div>
             """, unsafe_allow_html=True)
         else:
+            # Apply enhanced markdown to assistant messages
+            formatted_content = render_markdown("content")
             # Apply enhanced markdown to assistant messages
             formatted_content = render_markdown(message["content"])
             
@@ -1304,6 +1560,9 @@ def display_messages():
             </div>
             """, unsafe_allow_html=True)
     
+    # Close the messages wrapper
+    st.markdown('</div>', unsafe_allow_html=True)
+    
     # Show typing indicator if active
     if st.session_state.typing:
         st.markdown(f"""
@@ -1314,6 +1573,67 @@ def display_messages():
         </div>
         """, unsafe_allow_html=True)
 
+# Summarize conversation
+def summarize_conversation(messages):
+    if len(messages) <= 1:
+        return "No conversation to summarize yet."
+    
+    # Extract just the content from messages
+    content = "\n".join([f"{msg['role']}: {msg['content']}" for msg in messages])
+    
+    # Create a summary prompt
+    summary_prompt = f"""
+    Summarize the following conversation in 3-5 bullet points, highlighting key information and insights:
+    
+    {content}
+    """
+    
+    try:
+        response = ollama.chat(
+            model="llama3",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant that summarizes conversations concisely."},
+                {"role": "user", "content": summary_prompt}
+            ]
+        )
+        
+        return response['message']['content']
+    except Exception as e:
+        return f"Could not generate summary: {str(e)}"
+
+# Analyze code in conversation
+def analyze_code(messages):
+    # Extract code blocks from the conversation
+    code_blocks = []
+    for msg in messages:
+        content = msg["content"]
+        # Find all code blocks using regex
+        matches = re.findall(r'```(\w+)?\s*\n(.*?)\n```', content, re.DOTALL)
+        for lang, code in matches:
+            code_blocks.append((lang, code))
+    
+    if not code_blocks:
+        return "No code blocks found in the conversation."
+    
+    # Create an analysis prompt
+    analysis_prompt = "Analyze the following code blocks for security issues, best practices, and potential improvements:\n\n"
+    
+    for i, (lang, code) in enumerate(code_blocks):
+        analysis_prompt += f"Code Block {i+1} ({lang}):\n```{lang}\n{code}\n```\n\n"
+    
+    try:
+        response = ollama.chat(
+            model="llama3",
+            messages=[
+                {"role": "system", "content": "You are a cybersecurity expert that analyzes code for security vulnerabilities and best practices."},
+                {"role": "user", "content": analysis_prompt}
+            ]
+        )
+        
+        return response['message']['content']
+    except Exception as e:
+        return f"Could not analyze code: {str(e)}"
+
 # Generate response with streaming effect
 def generate_response(prompt, selected_model, mode="standard"):
     st.session_state.typing = True
@@ -1321,7 +1641,7 @@ def generate_response(prompt, selected_model, mode="standard"):
     # Increment stats based on prompt content
     if any(term in prompt.lower() for term in ["vulnerability", "scan", "security", "pentest"]):
         st.session_state.vulnerability_scans += 1
-    if "\`\`\`" in prompt or any(term in prompt.lower() for term in ["code", "script", "function", "class"]):
+    if "```" in prompt or any(term in prompt.lower() for term in ["code", "script", "function", "class"]):
         st.session_state.code_snippets += 1
     if any(term in prompt.lower() for term in ["best practice", "secure", "protect", "defense"]):
         st.session_state.security_tips += 1
@@ -1440,6 +1760,12 @@ def generate_response(prompt, selected_model, mode="standard"):
     
     st.session_state.typing = False
     st.session_state.chat_history_count += 1
+    
+    # Auto-analyze code if enabled
+    if st.session_state.auto_analyze and "```" in full_response:
+        analysis = analyze_code([{"role": "assistant", "content": full_response}])
+        st.info(f"**Code Analysis:**\n\n{analysis}")
+    
     return full_response
 
 # Save chat to history
@@ -1589,23 +1915,50 @@ with st.sidebar:
             st.session_state.user_name = name_input if name_input else "User"
             st.success(f"Name updated to {st.session_state.user_name}!")
     
+    # AI Features
+    with st.expander("🧠 AI Features", expanded=False):
+        # Summarize toggle
+        summarize_col, analyze_col = st.columns(2)
+        
+        with summarize_col:
+            if st.toggle("Summarize", value=st.session_state.summarize_mode, key="summarize_toggle"):
+                st.session_state.summarize_mode = True
+            else:
+                st.session_state.summarize_mode = False
+        
+        with analyze_col:
+            if st.toggle("Auto-Analyze", value=st.session_state.auto_analyze, key="analyze_toggle"):
+                st.session_state.auto_analyze = True
+            else:
+                st.session_state.auto_analyze = False
+        
+        st.markdown("""
+        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem;">
+            <strong>Summarize:</strong> Generate a summary of the conversation<br>
+            <strong>Auto-Analyze:</strong> Automatically analyze code for security issues
+        </div>
+        """, unsafe_allow_html=True)
+    
     # Theme selector
     st.subheader("🎨 Theme")
     
     # Create theme selector
+    st.markdown('<div class="theme-selector">', unsafe_allow_html=True)
+    for theme_id, theme in THEMES.items():
+        # Create a colored circle for each theme
+        active_class = "active" if st.session_state.theme == theme_id else ""
+        st.markdown(f"""
+        <div class="theme-option {active_class}" 
+             style="background: linear-gradient(135deg, {theme['primary_color']}, {theme['secondary_color']});"
+             id="theme_{theme_id}">
+        </div>
+        """, unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # Add buttons for theme selection
     theme_cols = st.columns(4)
     for i, (theme_id, theme) in enumerate(THEMES.items()):
         with theme_cols[i % 4]:
-            # Create a colored circle for each theme
-            active_class = "active" if st.session_state.theme == theme_id else ""
-            st.markdown(f"""
-            <div class="theme-option {active_class}" 
-                 style="background: linear-gradient(135deg, {theme['primary_color']}, {theme['secondary_color']});"
-                 id="theme_{theme_id}">
-            </div>
-            """, unsafe_allow_html=True)
-            
-            # Add a hidden button to handle the click
             if st.button(theme["name"], key=f"theme_btn_{theme_id}", help=f"Switch to {theme['name']} theme"):
                 st.session_state.theme = theme_id
                 st.rerun()
@@ -1693,9 +2046,6 @@ with st.sidebar:
 
 # Main chat interface - restructured to use space above
 main_container = st.container()
-if st.button("📄 Download Chat Log"):
-    chat_log = "\n".join([f"{msg['role'].capitalize()}: {msg['content']}" for msg in st.session_state.messages])
-    st.download_button("📥 Save Chat as TXT", data=chat_log, file_name="chat_log.txt")
 
 with main_container:
     # Welcome message with ASCII art logo
@@ -1827,8 +2177,48 @@ with main_container:
         </div>
         """, unsafe_allow_html=True)
     
+    # Show summary if enabled
+    if st.session_state.summarize_mode and len(st.session_state.messages) > 1:
+        summary = summarize_conversation(st.session_state.messages)
+        st.markdown(f"""
+        <div class="summary-container">
+            <div class="summary-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                Conversation Summary
+            </div>
+            <div class="summary-content">{summary}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
     # Create a layout with proper spacing
     st.markdown('<div class="main-layout">', unsafe_allow_html=True)
+    
+    # Custom chat input at the top (before chat container)
+    st.markdown('<div class="input-container">', unsafe_allow_html=True)
+    
+    # Two-column layout for input and button
+    col1, col2 = st.columns([6, 1])
+    
+    with col1:
+        # Use a unique key each time to prevent the experimental_rerun error
+        user_input = st.text_input(
+            "Ask about cybersecurity, DevSecOps, or request code...",
+            key=f"user_input_{st.session_state.input_key}"
+        )
+    
+    with col2:
+        # Add a send icon to the button
+        st.markdown('<div class="send-icon">', unsafe_allow_html=True)
+        send_button = st.button("📤", key="send_button", help="Send message")
+        st.markdown('</div>', unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # Chat container - now takes most of the vertical space
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
@@ -1875,24 +2265,6 @@ with main_container:
                 st.rerun()
     
     st.markdown('</div>', unsafe_allow_html=True)
-    
-    # Custom chat input at the bottom
-    st.markdown('<div class="input-container">', unsafe_allow_html=True)
-    
-    # Two-column layout for input and button
-    col1, col2 = st.columns([6, 1])
-    
-    with col1:
-        # Use a unique key each time to prevent the experimental_rerun error
-        user_input = st.text_input(
-            "Ask about cybersecurity, DevSecOps, or request code...",
-            key=f"user_input_{st.session_state.input_key}"
-        )
-    
-    with col2:
-        send_button = st.button("💬 Ask CyberGuard AI", key="send", use_container_width=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)  # Close main-layout
     
     # Process user input
@@ -1926,4 +2298,4 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Run the app with: streamlit run cyberguard_ai.py
-print("CyberGuard AI is running! Access it in your browser.")
+print("CyberGuard AI is running! Access it in your browser")
