@@ -1,4 +1,4 @@
-![image](https://github.com/user-attachments/assets/bdc196e3-fca9-463c-92d6-1a382f39393f)# Cyber-Guard
+# Cyber-Guard
 Final Year Project
 Here’s your full **detailed `README.md`** in proper markdown syntax for the **Cyber-Guard** GitHub repository, formatted cleanly with all essential sections:
 
