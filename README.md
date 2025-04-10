@@ -172,8 +172,8 @@ streamlit run app.py
 | Name           | Role                             |
 |----------------|----------------------------------|
 | Hitarth Shah   | Lead Developer, Deep Research Creator |
-| Maharishi      | DevSecOps Integration, Testing Lead |
-| Dhaarakh       | UI/UX Designer, Backend Contributor |
+| Maharshi      | DevSecOps Integration, Testing Lead |
+| Dhaarak       | UI/UX Designer, Backend Contributor |
 --------------------------------------------------------
 
 ## 📢 Contact Us
