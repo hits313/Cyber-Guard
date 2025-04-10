@@ -1,8 +1,9 @@
-# Cyber-Guard
+![image](https://github.com/user-attachments/assets/bdc196e3-fca9-463c-92d6-1a382f39393f)# Cyber-Guard
 Final Year Project
 Here’s your full **detailed `README.md`** in proper markdown syntax for the **Cyber-Guard** GitHub repository, formatted cleanly with all essential sections:
 
-4![image](https://github.com/user-attachments/assets/0115fe51-5f31-40dd-9f9c-25a1b5e1d562)
+![image](https://github.com/user-attachments/assets/46be77c6-39d6-4b48-a158-bad1daf29279)
+
 
 
 ```markdown
@@ -79,6 +80,12 @@ cyber-guard/
 > A clean and simple UI designed using **Streamlit**, supports multi-turn chat history, advanced query chaining, and cybersec-specific prompts.
 
 ![UI Screenshot](screenshots/cyberguard-ui-preview.png)
+
+![image](https://github.com/user-attachments/assets/4832371a-2d80-404e-82d1-926d91e38fca)
+![image](https://github.com/user-attachments/assets/8d58a33f-c5fc-4548-8cb8-85693a4fc30f)
+![image](https://github.com/user-attachments/assets/3d28a35c-d729-4bd4-8fe9-1d3985b824a9)
+![image](https://github.com/user-attachments/assets/5edc557b-5863-4bd3-b275-fcdaf72efdfd)
+
 
 ---
 
