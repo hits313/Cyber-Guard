@@ -2,7 +2,8 @@
 Final Year Project
 Here’s your full **detailed `README.md`** in proper markdown syntax for the **Cyber-Guard** GitHub repository, formatted cleanly with all essential sections:
 
----
+4![image](https://github.com/user-attachments/assets/0115fe51-5f31-40dd-9f9c-25a1b5e1d562)
+
 
 ```markdown
 # 🛡️ Cyber-Guard: AI-Powered Cybersecurity Assistant
