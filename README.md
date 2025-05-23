@@ -179,7 +179,7 @@ streamlit run app.py
 ## 📢 Contact Us
 
 - 📧 Email: `hitarthshahx`
-- 🔗 LinkedIn: [Hitarth Shah]
+- 🔗 LinkedIn: https://www.linkedin.com/in/hitarthshah108/
 - 🐦 Twitter: [@hits]
 
 ---
