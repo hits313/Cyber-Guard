@@ -6,7 +6,7 @@ Here’s your full **detailed `README.md`** in proper markdown syntax for the **
 
 
 
-```markdown
+```Markdown
 # 🛡️ Cyber-Guard: AI-Powered Cybersecurity Assistant
 
 **Cyber-Guard** is an AI-driven assistant crafted specifically for the modern cybersecurity landscape. Tailored for **DevSecOps**, **bug bounty hunters**, and **infosec researchers**, it offers advanced contextual understanding and deep analytical capabilities. This project was created as a **Final Year Capstone Project** by:
